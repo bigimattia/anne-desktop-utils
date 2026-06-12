@@ -2,6 +2,8 @@
 
 Anne Utils è un'applicazione desktop multi-piattaforma scritta in Kotlin Multiplatform (KMP) con Compose Desktop. L'app intercetta scorciatoie da tastiera a livello globale per cambiare desktop virtuale (`Win+Numero` su Windows, `Cmd+Numero` su Mac). Su Windows, `Win+Shift+Numero` sposta la finestra attiva sul desktop indicato. Il tasto `0` corrisponde al desktop 10.
 
+L'interfaccia usa automaticamente l'italiano quando la lingua di sistema è impostata su italiano; per tutte le altre lingue usa l'inglese. L'opzione di avvio con il sistema apre l'applicazione solo nell'area di notifica, senza mostrare la finestra principale.
+
 ## Requisiti
 - **mise** (per gestire i tool di sviluppo)
 

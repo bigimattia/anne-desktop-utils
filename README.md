@@ -42,4 +42,4 @@ Per installare i tool, compilare ed eseguire il progetto completamente da riga d
 ## Limitazioni e Note
 
 - **Windows**: L'helper per i desktop virtuali viene compilato dal sorgente incluso in `native/windows/AnneVirtualDesktop.cs` e incorporato nell'app. Non è necessario scaricare eseguibili esterni. Windows non espone API pubbliche sufficienti per enumerare e cambiare desktop per numero o per spostare le finestre di altri processi, quindi l'helper usa le interfacce COM interne di Windows 11 24H2.
-- **macOS**: Non ci sono API pubbliche per cambiare le "Scrivanie". L'app simula per questo la pressione di `Ctrl+Numero`. Affinché l'app funzioni correttamente, assicurati di aver abilitato le relative scorciatoie in *Impostazioni di Sistema -> Tastiera -> Abbreviazioni da tastiera -> Mission Control -> Passa alla scrivania N*.
+- **macOS**: Non ci sono API pubbliche per cambiare le "Scrivanie" o spostare finestre tra di esse. Entrambe le operazioni usano un piccolo helper compilato dal sorgente incluso in `native/macos/AnneVirtualDesktop.m`.

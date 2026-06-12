@@ -1,10 +1,12 @@
 package com.anne.utils.ui
 
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Switch
 import androidx.compose.material.SwitchDefaults
@@ -18,20 +20,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.anne.utils.AppPreferences
 import com.anne.utils.HotkeyManager
 import com.anne.utils.localization.AppStrings
 
 @Composable
 internal fun DesktopSwitcherScreen(
     hotkeyManager: HotkeyManager,
+    preferences: AppPreferences,
     strings: AppStrings,
     onPermissionDenied: () -> Unit
 ) {
     var isEnabled by remember { mutableStateOf(hotkeyManager.isRunning) }
 
     Column(
-        Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -46,7 +51,10 @@ internal fun DesktopSwitcherScreen(
             modifier = Modifier.padding(bottom = 32.dp)
         )
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(bottom = 32.dp)
+        ) {
             Text("${strings.status}: ", color = Color.White)
             Switch(
                 checked = isEnabled,
@@ -72,5 +80,11 @@ internal fun DesktopSwitcherScreen(
                 modifier = Modifier.padding(start = 16.dp)
             )
         }
+
+        DesktopSwitcherSettings(
+            hotkeyManager = hotkeyManager,
+            preferences = preferences,
+            strings = strings
+        )
     }
 }

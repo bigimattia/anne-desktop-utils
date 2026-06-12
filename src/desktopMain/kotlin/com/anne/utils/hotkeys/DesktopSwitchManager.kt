@@ -9,9 +9,7 @@ import com.github.kwhat.jnativehook.NativeInputEvent
 import com.github.kwhat.jnativehook.dispatcher.VoidDispatchService
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener
-import java.awt.Robot
 import java.awt.EventQueue
-import java.awt.event.KeyEvent
 import java.io.File
 import java.lang.reflect.Field
 import java.nio.file.Files
@@ -39,6 +37,7 @@ class DesktopSwitchManager(
     private val isMac = System.getProperty("os.name").lowercase().contains("mac")
     private val isWindows = System.getProperty("os.name").lowercase().contains("windows")
     private val windowsDesktopHelper: File by lazy { extractWindowsDesktopHelper() }
+    private val macDesktopHelper: File by lazy { extractMacDesktopHelper() }
 
     init {
         val logger = Logger.getLogger(GlobalScreen::class.java.getPackage().name)
@@ -126,7 +125,7 @@ class DesktopSwitchManager(
 
         if (pressedShortcutKeys.add(event.keyCode)) {
             if (match.moveWindow) {
-                moveActiveWindowToWindowsDesktop(match.desktop)
+                moveActiveWindowToDesktop(match.desktop)
             } else {
                 switchToDesktop(match.desktop)
             }
@@ -217,7 +216,7 @@ class DesktopSwitchManager(
 
         val moveModifiers = binding.modifiers.copy(shift = true)
         if (
-            isWindows &&
+            (isWindows || isMac) &&
             !binding.modifiers.shift &&
             actualModifiers == moveModifiers
         ) {
@@ -278,44 +277,29 @@ class DesktopSwitchManager(
 
     private fun switchToDesktop(desktop: Int) {
         when {
-            isMac -> switchMacDesktop(desktop)
+            isMac -> runMacDesktopCommand("switch", (desktop - 1).toString())
             isWindows -> runWindowsDesktopCommand("switch", (desktop - 1).toString())
         }
     }
 
-    private fun switchMacDesktop(desktop: Int) {
-        try {
-            val keyCode = when (desktop) {
-                1 -> KeyEvent.VK_1
-                2 -> KeyEvent.VK_2
-                3 -> KeyEvent.VK_3
-                4 -> KeyEvent.VK_4
-                5 -> KeyEvent.VK_5
-                6 -> KeyEvent.VK_6
-                7 -> KeyEvent.VK_7
-                8 -> KeyEvent.VK_8
-                9 -> KeyEvent.VK_9
-                10 -> KeyEvent.VK_0
-                else -> return
-            }
-            Robot().run {
-                keyPress(KeyEvent.VK_CONTROL)
-                keyPress(keyCode)
-                keyRelease(keyCode)
-                keyRelease(KeyEvent.VK_CONTROL)
-            }
-        } catch (exception: Exception) {
-            exception.printStackTrace()
+    private fun moveActiveWindowToDesktop(desktop: Int) {
+        when {
+            isWindows -> runWindowsDesktopCommand("move", (desktop - 1).toString())
+            isMac -> runMacDesktopCommand("move", (desktop - 1).toString())
         }
-    }
-
-    private fun moveActiveWindowToWindowsDesktop(desktop: Int) {
-        runWindowsDesktopCommand("move", (desktop - 1).toString())
     }
 
     private fun runWindowsDesktopCommand(vararg arguments: String) {
         try {
             ProcessBuilder(windowsDesktopHelper.absolutePath, *arguments).start()
+        } catch (exception: Exception) {
+            exception.printStackTrace()
+        }
+    }
+
+    private fun runMacDesktopCommand(vararg arguments: String) {
+        try {
+            ProcessBuilder(macDesktopHelper.absolutePath, *arguments).start()
         } catch (exception: Exception) {
             exception.printStackTrace()
         }
@@ -336,6 +320,29 @@ class DesktopSwitchManager(
         val helper = File(helperDir, "AnneVirtualDesktop.exe")
         resource.use {
             Files.copy(it, helper.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        }
+        helper.deleteOnExit()
+        return helper
+    }
+
+    private fun extractMacDesktopHelper(): File {
+        val resource = checkNotNull(
+            DesktopSwitchManager::class.java.getResourceAsStream("/macos/AnneVirtualDesktop")
+        ) {
+            "Embedded macOS virtual desktop helper not found."
+        }
+
+        val helperDir = File(System.getProperty("java.io.tmpdir"), "anne-desktop-utils")
+        check(helperDir.exists() || helperDir.mkdirs()) {
+            "Unable to create helper directory: ${helperDir.absolutePath}"
+        }
+
+        val helper = File(helperDir, "AnneVirtualDesktop")
+        resource.use {
+            Files.copy(it, helper.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        }
+        check(helper.setExecutable(true)) {
+            "Unable to mark macOS virtual desktop helper as executable."
         }
         helper.deleteOnExit()
         return helper

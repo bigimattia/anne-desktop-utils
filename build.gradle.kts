@@ -7,6 +7,7 @@ group = "com.anne"
 version = "1.0-SNAPSHOT"
 
 val isWindows = System.getProperty("os.name").lowercase().contains("windows")
+val isMac = System.getProperty("os.name").lowercase().contains("mac")
 val windowsHelperSource = layout.projectDirectory.file("native/windows/AnneVirtualDesktop.cs")
 val windowsHelperResources = layout.buildDirectory.dir("generated/windowsHelperResources")
 val windowsHelperExecutable = windowsHelperResources.map {
@@ -33,6 +34,34 @@ val compileWindowsDesktopHelper by tasks.registering(Exec::class) {
     )
 }
 
+val macHelperSource = layout.projectDirectory.file("native/macos/AnneVirtualDesktop.m")
+val macHelperResources = layout.buildDirectory.dir("generated/macHelperResources")
+val macHelperExecutable = macHelperResources.map {
+    it.file("macos/AnneVirtualDesktop")
+}
+
+val compileMacDesktopHelper by tasks.registering(Exec::class) {
+    onlyIf { isMac }
+    inputs.file(macHelperSource)
+    outputs.file(macHelperExecutable)
+
+    doFirst {
+        macHelperExecutable.get().asFile.parentFile.mkdirs()
+    }
+
+    commandLine(
+        "clang",
+        "-fobjc-arc",
+        "-framework",
+        "AppKit",
+        "-framework",
+        "ApplicationServices",
+        "-o",
+        macHelperExecutable.get().asFile.absolutePath,
+        macHelperSource.asFile.absolutePath
+    )
+}
+
 repositories {
     google()
     mavenCentral()
@@ -49,6 +78,7 @@ kotlin {
     sourceSets {
         val desktopMain by getting {
             resources.srcDir(windowsHelperResources)
+            resources.srcDir(macHelperResources)
             dependencies {
                 implementation(compose.desktop.currentOs)
                 // JNativeHook for global keyboard events
@@ -68,6 +98,7 @@ kotlin {
 
 tasks.matching { it.name == "desktopProcessResources" }.configureEach {
     dependsOn(compileWindowsDesktopHelper)
+    dependsOn(compileMacDesktopHelper)
 }
 
 compose.desktop {

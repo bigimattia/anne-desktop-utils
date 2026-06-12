@@ -58,12 +58,12 @@ fun App(
                 when (currentScreen) {
                     Screen.DESKTOP_SWITCHER -> DesktopSwitcherScreen(
                         hotkeyManager = hotkeyManager,
+                        preferences = preferences,
                         strings = strings,
                         onPermissionDenied = { showPermissionDialog = true }
                     )
 
                     Screen.SETTINGS -> SettingsScreen(
-                        hotkeyManager = hotkeyManager,
                         preferences = preferences,
                         strings = strings,
                         onShowTrayIconChanged = onShowTrayIconChanged

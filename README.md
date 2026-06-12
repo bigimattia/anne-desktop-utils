@@ -4,6 +4,11 @@ Anne Utils è un'applicazione desktop multi-piattaforma scritta in Kotlin Multip
 
 L'interfaccia usa automaticamente l'italiano quando la lingua di sistema è impostata su italiano; per tutte le altre lingue usa l'inglese. L'opzione di avvio con il sistema apre l'applicazione solo nell'area di notifica, senza mostrare la finestra principale.
 
+Le scorciatoie sono configurabili dalle impostazioni in due modalità:
+
+- una combinazione di modificatori condivisa con i tasti `1-9` e `0`;
+- una combinazione registrata separatamente per ciascun desktop.
+
 ## Requisiti
 - **mise** (per gestire i tool di sviluppo)
 

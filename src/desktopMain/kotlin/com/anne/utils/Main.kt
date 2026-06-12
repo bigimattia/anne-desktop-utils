@@ -17,8 +17,8 @@ import java.util.Locale
 
 fun main(args: Array<String>) = application {
     val startInTray = args.any { it.equals(START_IN_TRAY_ARGUMENT, ignoreCase = true) }
-    val hotkeyManager = remember { DesktopSwitchManager() }
     val preferences = remember { AppPreferencesImpl() }
+    val hotkeyManager = remember { DesktopSwitchManager(preferences.hotkeyBindings) }
     if (startInTray && !preferences.showTrayIcon) {
         preferences.showTrayIcon = true
     }

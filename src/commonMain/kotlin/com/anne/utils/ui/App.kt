@@ -63,6 +63,7 @@ fun App(
                     )
 
                     Screen.SETTINGS -> SettingsScreen(
+                        hotkeyManager = hotkeyManager,
                         preferences = preferences,
                         strings = strings,
                         onShowTrayIconChanged = onShowTrayIconChanged

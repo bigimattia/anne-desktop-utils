@@ -26,6 +26,7 @@ class DesktopSwitchManager : HotkeyManager, NativeKeyListener {
     override val isRunning: Boolean get() = _isRunning
 
     private val pressedShortcutKeys = mutableSetOf<Int>()
+    private var suppressMetaRelease = false
     private val reservedField: Field = NativeInputEvent::class.java
         .getDeclaredField("reserved")
         .apply { isAccessible = true }
@@ -67,6 +68,7 @@ class DesktopSwitchManager : HotkeyManager, NativeKeyListener {
         if (_isRunning) {
             GlobalScreen.removeNativeKeyListener(this)
             pressedShortcutKeys.clear()
+            suppressMetaRelease = false
             _isRunning = false
         }
     }
@@ -81,6 +83,7 @@ class DesktopSwitchManager : HotkeyManager, NativeKeyListener {
 
             if (desktopNumber != -1) {
                 consume(e)
+                suppressMetaRelease = true
 
                 if (pressedShortcutKeys.add(e.keyCode)) {
                     if (isWindows && hasShift) {
@@ -94,6 +97,12 @@ class DesktopSwitchManager : HotkeyManager, NativeKeyListener {
     }
 
     override fun nativeKeyReleased(e: NativeKeyEvent) {
+        if (e.keyCode == NativeKeyEvent.VC_META && suppressMetaRelease) {
+            consume(e)
+            suppressMetaRelease = false
+            return
+        }
+
         if (pressedShortcutKeys.remove(e.keyCode)) {
             consume(e)
         }

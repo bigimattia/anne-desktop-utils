@@ -88,7 +88,7 @@ fun App(hotkeyManager: HotkeyManager, prefs: AppPreferences) {
                             )
 
                             Text(
-                                text = "Maps Win/Cmd + 0-9 to Desktop 1-10",
+                                text = "Win/Cmd + 0-9 switches desktops. On Windows, add Shift to move the active window.",
                                 color = Color.Gray,
                                 modifier = Modifier.padding(bottom = 32.dp)
                             )

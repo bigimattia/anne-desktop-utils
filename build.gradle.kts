@@ -6,6 +6,33 @@ plugins {
 group = "com.anne"
 version = "1.0-SNAPSHOT"
 
+val isWindows = System.getProperty("os.name").lowercase().contains("windows")
+val windowsHelperSource = layout.projectDirectory.file("native/windows/AnneVirtualDesktop.cs")
+val windowsHelperResources = layout.buildDirectory.dir("generated/windowsHelperResources")
+val windowsHelperExecutable = windowsHelperResources.map {
+    it.file("windows/AnneVirtualDesktop.exe")
+}
+
+val compileWindowsDesktopHelper by tasks.registering(Exec::class) {
+    onlyIf { isWindows }
+    inputs.file(windowsHelperSource)
+    outputs.file(windowsHelperExecutable)
+
+    doFirst {
+        windowsHelperExecutable.get().asFile.parentFile.mkdirs()
+    }
+
+    commandLine(
+        "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe",
+        "/nologo",
+        "/target:winexe",
+        "/platform:x64",
+        "/optimize+",
+        "/out:${windowsHelperExecutable.get().asFile.absolutePath}",
+        windowsHelperSource.asFile.absolutePath
+    )
+}
+
 repositories {
     google()
     mavenCentral()
@@ -21,6 +48,7 @@ kotlin {
     
     sourceSets {
         val desktopMain by getting {
+            resources.srcDir(windowsHelperResources)
             dependencies {
                 implementation(compose.desktop.currentOs)
                 // JNativeHook for global keyboard events
@@ -36,6 +64,10 @@ kotlin {
             }
         }
     }
+}
+
+tasks.matching { it.name == "desktopProcessResources" }.configureEach {
+    dependsOn(compileWindowsDesktopHelper)
 }
 
 compose.desktop {

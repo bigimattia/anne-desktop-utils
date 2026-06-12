@@ -1,6 +1,6 @@
 # Anne Utils
 
-Anne Utils è un'applicazione desktop multi-piattaforma scritta in Kotlin Multiplatform (KMP) con Compose Desktop. L'app intercetta scorciatoie da tastiera a livello globale per cambiare desktop virtuale (`Win+Numero` su Windows, `Cmd+Numero` su Mac).
+Anne Utils è un'applicazione desktop multi-piattaforma scritta in Kotlin Multiplatform (KMP) con Compose Desktop. L'app intercetta scorciatoie da tastiera a livello globale per cambiare desktop virtuale (`Win+Numero` su Windows, `Cmd+Numero` su Mac). Su Windows, `Win+Shift+Numero` sposta la finestra attiva sul desktop indicato. Il tasto `0` corrisponde al desktop 10.
 
 ## Requisiti
 - **mise** (per gestire i tool di sviluppo)
@@ -34,5 +34,5 @@ Per installare i tool, compilare ed eseguire il progetto completamente da riga d
 
 ## Limitazioni e Note
 
-- **Windows**: Per far sì che l'applicazione cambi effettivamente desktop virtuale superando le limitazioni del sistema operativo, richiede il download di un'utility chiamata `VirtualDesktop.exe`. Questa utilità va piazzata in `~/.anne-desktop-utils/VirtualDesktop.exe`.
+- **Windows**: L'helper per i desktop virtuali viene compilato dal sorgente incluso in `native/windows/AnneVirtualDesktop.cs` e incorporato nell'app. Non è necessario scaricare eseguibili esterni. Windows non espone API pubbliche sufficienti per enumerare e cambiare desktop per numero o per spostare le finestre di altri processi, quindi l'helper usa le interfacce COM interne di Windows 11 24H2.
 - **macOS**: Non ci sono API pubbliche per cambiare le "Scrivanie". L'app simula per questo la pressione di `Ctrl+Numero`. Affinché l'app funzioni correttamente, assicurati di aver abilitato le relative scorciatoie in *Impostazioni di Sistema -> Tastiera -> Abbreviazioni da tastiera -> Mission Control -> Passa alla scrivania N*.

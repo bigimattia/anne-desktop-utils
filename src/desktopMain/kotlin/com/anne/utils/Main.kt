@@ -6,12 +6,17 @@ import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import com.github.kwhat.jnativehook.GlobalScreen
+import com.github.kwhat.jnativehook.NativeInputEvent
 import com.github.kwhat.jnativehook.NativeHookException
+import com.github.kwhat.jnativehook.dispatcher.VoidDispatchService
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener
 import java.awt.Robot
 import java.awt.event.KeyEvent
 import java.io.File
+import java.lang.reflect.Field
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.util.logging.Level
 import java.util.logging.Logger
 import java.util.prefs.Preferences
@@ -20,8 +25,14 @@ class DesktopSwitchManager : HotkeyManager, NativeKeyListener {
     private var _isRunning = false
     override val isRunning: Boolean get() = _isRunning
 
+    private val pressedShortcutKeys = mutableSetOf<Int>()
+    private val reservedField: Field = NativeInputEvent::class.java
+        .getDeclaredField("reserved")
+        .apply { isAccessible = true }
+
     private val isMac = System.getProperty("os.name").lowercase().contains("mac")
     private val isWindows = System.getProperty("os.name").lowercase().contains("windows")
+    private val windowsDesktopHelper: File by lazy { extractWindowsDesktopHelper() }
 
     init {
         val logger = Logger.getLogger(GlobalScreen::class.java.getPackage().name)
@@ -33,6 +44,8 @@ class DesktopSwitchManager : HotkeyManager, NativeKeyListener {
         if (!_isRunning) {
             try {
                 if (!GlobalScreen.isNativeHookRegistered()) {
+                    // Event consumption must happen synchronously before the native hook returns.
+                    GlobalScreen.setEventDispatcher(VoidDispatchService())
                     GlobalScreen.registerNativeHook()
                 }
                 GlobalScreen.addNativeKeyListener(this)
@@ -53,44 +66,58 @@ class DesktopSwitchManager : HotkeyManager, NativeKeyListener {
     override fun stop() {
         if (_isRunning) {
             GlobalScreen.removeNativeKeyListener(this)
+            pressedShortcutKeys.clear()
             _isRunning = false
         }
     }
 
     override fun nativeKeyPressed(e: NativeKeyEvent) {
         val modifiers = e.modifiers
-        val hasMeta = (modifiers and NativeKeyEvent.VC_META) != 0
+        val hasMeta = (modifiers and NativeInputEvent.META_MASK) != 0
+        val hasShift = (modifiers and NativeInputEvent.SHIFT_MASK) != 0
 
         if (hasMeta) {
-            val desktopNumber = when (e.keyCode) {
-                NativeKeyEvent.VC_1 -> 1
-                NativeKeyEvent.VC_2 -> 2
-                NativeKeyEvent.VC_3 -> 3
-                NativeKeyEvent.VC_4 -> 4
-                NativeKeyEvent.VC_5 -> 5
-                NativeKeyEvent.VC_6 -> 6
-                NativeKeyEvent.VC_7 -> 7
-                NativeKeyEvent.VC_8 -> 8
-                NativeKeyEvent.VC_9 -> 9
-                NativeKeyEvent.VC_0 -> 10
-                else -> -1
-            }
+            val desktopNumber = desktopNumberFor(e.keyCode)
 
             if (desktopNumber != -1) {
-                try {
-                    val field = NativeKeyEvent::class.java.getDeclaredField("reserved")
-                    field.isAccessible = true
-                    field.setShort(e, 0x01.toShort()) 
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
+                consume(e)
+
+                if (pressedShortcutKeys.add(e.keyCode)) {
+                    if (isWindows && hasShift) {
+                        moveActiveWindowToWindowsDesktop(desktopNumber)
+                    } else {
+                        switchToDesktop(desktopNumber)
+                    }
                 }
-                switchToDesktop(desktopNumber)
             }
         }
     }
 
-    override fun nativeKeyReleased(e: NativeKeyEvent) {}
+    override fun nativeKeyReleased(e: NativeKeyEvent) {
+        if (pressedShortcutKeys.remove(e.keyCode)) {
+            consume(e)
+        }
+    }
+
     override fun nativeKeyTyped(e: NativeKeyEvent) {}
+
+    private fun desktopNumberFor(keyCode: Int): Int = when (keyCode) {
+        NativeKeyEvent.VC_1 -> 1
+        NativeKeyEvent.VC_2 -> 2
+        NativeKeyEvent.VC_3 -> 3
+        NativeKeyEvent.VC_4 -> 4
+        NativeKeyEvent.VC_5 -> 5
+        NativeKeyEvent.VC_6 -> 6
+        NativeKeyEvent.VC_7 -> 7
+        NativeKeyEvent.VC_8 -> 8
+        NativeKeyEvent.VC_9 -> 9
+        NativeKeyEvent.VC_0 -> 10
+        else -> -1
+    }
+
+    private fun consume(e: NativeKeyEvent) {
+        reservedField.setShort(e, 0x01.toShort())
+    }
 
     private fun switchToDesktop(desktop: Int) {
         if (isMac) switchMacDesktop(desktop)
@@ -123,20 +150,41 @@ class DesktopSwitchManager : HotkeyManager, NativeKeyListener {
     }
 
     private fun switchWindowsDesktop(desktop: Int) {
+        runWindowsDesktopCommand("switch", (desktop - 1).toString())
+    }
+
+    private fun moveActiveWindowToWindowsDesktop(desktop: Int) {
+        runWindowsDesktopCommand("move", (desktop - 1).toString())
+    }
+
+    private fun runWindowsDesktopCommand(vararg arguments: String) {
         try {
-            val userHome = System.getProperty("user.home")
-            val toolDir = File(userHome, ".anne-desktop-utils")
-            if (!toolDir.exists()) toolDir.mkdirs()
-            val exeFile = File(toolDir, "VirtualDesktop.exe")
-            if (exeFile.exists()) {
-                val process = ProcessBuilder(exeFile.absolutePath, "/Switch:$desktop")
-                process.start()
-            } else {
-                println("VirtualDesktop.exe not found.")
-            }
+            ProcessBuilder(windowsDesktopHelper.absolutePath, *arguments).start()
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    private fun extractWindowsDesktopHelper(): File {
+        val resource = checkNotNull(
+            DesktopSwitchManager::class.java.getResourceAsStream(
+                "/windows/AnneVirtualDesktop.exe"
+            )
+        ) {
+            "Embedded Windows virtual desktop helper not found."
+        }
+
+        val helperDir = File(System.getProperty("java.io.tmpdir"), "anne-desktop-utils")
+        check(helperDir.exists() || helperDir.mkdirs()) {
+            "Unable to create helper directory: ${helperDir.absolutePath}"
+        }
+
+        val helper = File(helperDir, "AnneVirtualDesktop.exe")
+        resource.use {
+            Files.copy(it, helper.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        }
+        helper.deleteOnExit()
+        return helper
     }
 }
 

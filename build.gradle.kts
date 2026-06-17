@@ -119,6 +119,7 @@ compose.desktop {
                 iconFile.set(project.file("src/desktopMain/resources/anne_icon.ico"))
                 menu = true
                 menuGroup = "AnneDesktopUtils"
+                perUserInstall = true
                 shortcut = true
             }
         }

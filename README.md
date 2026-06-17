@@ -27,6 +27,8 @@ Il file viene creato in:
 build\compose\binaries\main\exe\AnneDesktopUtils-1.0.0.exe
 ```
 
+L'installer `.exe` installa l'app per l'utente corrente, crea le scorciatoie Windows e le rimuove con la disinstallazione. Se hai installato una versione precedente in `C:\Program Files\AnneDesktopUtils`, disinstallala prima di installare il nuovo `.exe`.
+
 Per generare anche un pacchetto MSI opzionale:
 
 ```powershell

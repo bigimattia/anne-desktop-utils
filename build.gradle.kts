@@ -106,9 +106,21 @@ compose.desktop {
         mainClass = "com.anne.utils.MainKt"
         
         nativeDistributions {
-            targetFormats(org.jetbrains.compose.desktop.application.dsl.TargetFormat.Dmg, org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi, org.jetbrains.compose.desktop.application.dsl.TargetFormat.Deb)
+            targetFormats(
+                org.jetbrains.compose.desktop.application.dsl.TargetFormat.Dmg,
+                org.jetbrains.compose.desktop.application.dsl.TargetFormat.Exe,
+                org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi,
+                org.jetbrains.compose.desktop.application.dsl.TargetFormat.Deb
+            )
             packageName = "AnneDesktopUtils"
             packageVersion = "1.0.0"
+
+            windows {
+                iconFile.set(project.file("src/desktopMain/resources/anne_icon.ico"))
+                menu = true
+                menuGroup = "AnneDesktopUtils"
+                shortcut = true
+            }
         }
     }
 }

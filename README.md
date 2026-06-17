@@ -9,6 +9,36 @@ Le scorciatoie sono configurabili dalle impostazioni in due modalità:
 - una combinazione di modificatori condivisa con i tasti `1-9` e `0`;
 - una combinazione registrata separatamente per ciascun desktop.
 
+## Installazione
+
+### Windows
+
+Scarica il file `.exe` dalla sezione **Releases** e aprilo con un doppio clic.
+
+Per generare l'installer Windows localmente:
+
+```powershell
+.\gradlew.bat packageExe
+```
+
+Il file viene creato in:
+
+```text
+build\compose\binaries\main\exe\AnneDesktopUtils-1.0.0.exe
+```
+
+Per generare anche un pacchetto MSI opzionale:
+
+```powershell
+.\gradlew.bat packageMsi
+```
+
+WinGet non installa direttamente un installer locale. Supporta manifest locali, ma richiedono l'attivazione amministrativa della funzionalità. Dopo la pubblicazione del primo installer in una release GitHub, il progetto può essere aggiunto al repository pubblico WinGet per consentire:
+
+```powershell
+winget install --id bigimattia.AnneDesktopUtils -e
+```
+
 ## Requisiti
 - **mise** (per gestire i tool di sviluppo)
 
@@ -37,6 +67,14 @@ Per installare i tool, compilare ed eseguire il progetto completamente da riga d
    - Su Windows (`.msi`):
      ```bash
      mise x -- ./gradlew packageMsi
+     ```
+   - Su Windows (`.exe`):
+     ```bash
+     mise x -- ./gradlew packageExe
+     ```
+   - Tutti i formati supportati per il sistema corrente:
+     ```bash
+     mise x -- ./gradlew packageDistributionForCurrentOS
      ```
 
 ## Limitazioni e Note

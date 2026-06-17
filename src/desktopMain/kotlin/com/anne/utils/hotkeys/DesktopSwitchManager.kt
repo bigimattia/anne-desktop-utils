@@ -10,6 +10,8 @@ import com.github.kwhat.jnativehook.dispatcher.VoidDispatchService
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener
 import java.awt.EventQueue
+import java.awt.Robot
+import java.awt.event.KeyEvent
 import java.io.File
 import java.lang.reflect.Field
 import java.nio.file.Files
@@ -38,6 +40,9 @@ class DesktopSwitchManager(
     private val isWindows = System.getProperty("os.name").lowercase().contains("windows")
     private val windowsDesktopHelper: File by lazy { extractWindowsDesktopHelper() }
     private val macDesktopHelper: File by lazy { extractMacDesktopHelper() }
+    private val robot: Robot? by lazy {
+        runCatching { Robot().apply { autoDelay = 0 } }.getOrNull()
+    }
 
     init {
         val logger = Logger.getLogger(GlobalScreen::class.java.getPackage().name)
@@ -124,6 +129,7 @@ class DesktopSwitchManager(
         suppressAltRelease = match.binding.modifiers.alt
 
         if (pressedShortcutKeys.add(event.keyCode)) {
+            markWindowsModifierAsUsed(match.binding.modifiers)
             if (match.moveWindow) {
                 moveActiveWindowToDesktop(match.desktop)
             } else {
@@ -147,14 +153,12 @@ class DesktopSwitchManager(
         }
 
         if (event.keyCode == NativeKeyEvent.VC_META && suppressMetaRelease) {
-            consume(event)
             suppressMetaRelease = false
             if (!suppressAltRelease) removeCaptureOnlyListener()
             return
         }
 
         if (event.keyCode == NativeKeyEvent.VC_ALT && suppressAltRelease) {
-            consume(event)
             suppressAltRelease = false
             if (!suppressMetaRelease) removeCaptureOnlyListener()
             return
@@ -286,6 +290,15 @@ class DesktopSwitchManager(
         when {
             isWindows -> runWindowsDesktopCommand("move", (desktop - 1).toString())
             isMac -> runMacDesktopCommand("move", (desktop - 1).toString())
+        }
+    }
+
+    private fun markWindowsModifierAsUsed(modifiers: ShortcutModifiers) {
+        if (!isWindows || (!modifiers.meta && !modifiers.alt)) return
+
+        robot?.let {
+            it.keyPress(KeyEvent.VK_F24)
+            it.keyRelease(KeyEvent.VK_F24)
         }
     }
 

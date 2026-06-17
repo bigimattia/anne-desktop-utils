@@ -121,6 +121,7 @@ namespace AnneDesktopUtils
                 ref serviceId,
                 ref interfaceId);
         }
+
     }
 
     [ComImport]
